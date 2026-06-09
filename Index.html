@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polyglot Flashcards</title>
+    <style>
+        :root {
+            --primary: #4255ff;
+            --bg: #f6f7fb;
+            --text: #282e3e;
+            --card-bg: #ffffff;
+            --success: #23b26d;
+            --error: #ff725b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 0.5rem; }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        select, button {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #3343cc; }
+        button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+
+        /* Flashcard Styles */
+        .flashcard-container {
+            width: 100%;
+            max-width: 600px;
+            height: 350px;
+            perspective: 1000px;
+            margin-bottom: 1.5rem;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .flashcard.is-flipped { transform: rotateX(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+
+        .card-back {
+            transform: rotateX(180deg);
+            color: var(--primary);
+        }
+
+        .language-label {
+            position: absolute;
+            top: 1rem;
+            font-size: 1rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Speaking Controls */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        #mic-btn {
+            background-color: #ffaa00;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+        }
+        
+        #mic-btn.listening {
+            background-color: var(--error);
+            animation: pulse 1.5s infinite;
+        }
+
+        #feedback {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-top: 1rem;
+            text-align: center;
+            min-height: 30px;
+        }
+
+        .correct { color: var(--success); }
+        .incorrect { color: var(--error); }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 114, 91, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 114, 91, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 114, 91, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Polyglot Flashcards</h1>
+    <p>Learn Spanish, Portuguese, and French with AI Speech Feedback</p>
+
+    <div class="controls">
+        <select id="language-select">
+            <option value="es-ES">Spanish (Spain)</option>
+            <option value="es-MX">Spanish (Mexico)</option>
+            <option value="pt-PT">Portuguese (Portugal)</option>
+            <option value="pt-BR">Portuguese (Brazil)</option>
+            <option value="fr-FR">French</option>
+        </select>
+        <button id="next-btn">Next Word</button>
+    </div>
+
+    <div class="flashcard-container" id="flashcard-container">
+        <div class="flashcard" id="flashcard">
+            <div class="card-face card-front">
+                <span class="language-label">English</span>
+                <span id="english-text">Loading...</span>
+            </div>
+            <div class="card-face card-back">
+                <span class="language-label" id="target-lang-label">Spanish</span>
+                <span id="target-text">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button id="listen-btn" title="Hear Pronunciation">🔊 Listen</button>
+        <button id="mic-btn" title="Practice Speaking">🎤</button>
+    </div>
+    
+    <div id="feedback"></div>
+
+    <script>
+        // Core Vocabulary list (You can expand this later)
+        const vocabulary = [
+            "Hello", "Goodbye", "Please", "Thank you", "Water", 
+            "Friend", "Family", "Always", "Never", "Beautiful"
+        ];
+
+        let currentWordIndex = 0;
+        let currentTranslation = "";
+
+        // DOM Elements
+        const flashcard = document.getElementById('flashcard');
+        const englishText = document.getElementById('english-text');
+        const targetText = document.getElementById('target-text');
+        const targetLangLabel = document.getElementById('target-lang-label');
+        const langSelect = document.getElementById('language-select');
+        const nextBtn = document.getElementById('next-btn');
+        const listenBtn = document.getElementById('listen-btn');
+        const micBtn = document.getElementById('mic-btn');
+        const feedbackEl = document.getElementById('feedback');
+
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+        } else {
+            micBtn.disabled = true;
+            feedbackEl.innerText = "Speech recognition not supported in this browser. Try Chrome or Edge.";
+        }
+
+        // Flip Card Logic
+        flashcard.addEventListener('click', () => {
+            flashcard.classList.toggle('is-flipped');
+        });
+
+        // Fetch translation from Public API (MyMemory)
+        async function fetchTranslation(text, targetLang) {
+            // Extract the 2-letter language code for the API (e.g., 'es-ES' -> 'es')
+            const langCode = targetLang.split('-')[0]; 
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.responseData.translatedText;
+            } catch (error) {
+                console.error("Translation Error:", error);
+                return "Error fetching translation";
+            }
+        }
+
+        // Load a new card
+        async function loadCard() {
+            // Reset state
+            flashcard.classList.remove('is-flipped');
+            feedbackEl.innerText = "";
+            feedbackEl.className = "";
+            englishText.innerText = "Translating...";
+            targetText.innerText = "...";
+            nextBtn.disabled = true;
+
+            const englishWord = vocabulary[currentWordIndex];
+            const targetLang = langSelect.value;
+            
+            // Set labels
+            englishText.innerText = englishWord;
+            targetLangLabel.innerText = langSelect.options[langSelect.selectedIndex].text;
+
+            // Fetch data
+            const translatedWord = await fetchTranslation(englishWord, targetLang);
+            
+            // Clean up translation (API sometimes adds punctuation we don't want to match against)
+            currentTranslation = translatedWord.replace(/[.,!?]/g, '').trim();
+            targetText.innerText = currentTranslation;
+            nextBtn.disabled = false;
+        }
+
+        // Next Word Logic
+        nextBtn.addEventListener('click', () => {
+            currentWordIndex = (currentWordIndex + 1) % vocabulary.length;
+            loadCard();
+        });
+
+        // Language Change Logic
+        langSelect.addEventListener('change', () => {
+            loadCard();
+        });
+
+        // Text-to-Speech (Listen)
+        listenBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent card from flipping
+            const utterance = new SpeechSynthesisUtterance(currentTranslation);
+            utterance.lang = langSelect.value;
+            window.speechSynthesis.speak(utterance);
+        });
+
+        // Speech-to-Text (Speaking Practice)
+        micBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent card from flipping
+            
+            if (!recognition) return;
+
+            recognition.lang = langSelect.value;
+            recognition.start();
+            micBtn.classList.add('listening');
+            feedbackEl.innerText = "Listening...";
+            feedbackEl.className = "";
+        });
+
+        if (recognition) {
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase().replace(/[.,!?]/g, '').trim();
+                const target = currentTranslation.toLowerCase();
+
+                // Check similarity (basic exact match or inclusion)
+                if (transcript === target || transcript.includes(target) || target.includes(transcript)) {
+                    feedbackEl.innerText = `Great job! You said: "${transcript}"`;
+                    feedbackEl.className = "correct";
+                } else {
+                    feedbackEl.innerText = `Try again! You said: "${transcript}". We expected: "${target}"`;
+                    feedbackEl.className = "incorrect";
+                }
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                micBtn.classList.remove('listening');
+            };
+
+            recognition.onerror = (event) => {
+                micBtn.classList.remove('listening');
+                feedbackEl.innerText = `Error: ${event.error}. Please ensure your mic is enabled.`;
+                feedbackEl.className = "incorrect";
+            };
+        }
+
+        // Initialize first card
+        loadCard();
+
+    </script>
+</body>
+</html>
