@@ -1,0 +1,111 @@
+:root {
+    --primary: #4255ff;
+    --bg: #f6f7fb;
+    --text: #282e3e;
+    --card-bg: #ffffff;
+    --success: #23b26d;
+    --error: #ff725b;
+    --accent: #ffaa00;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: var(--card-bg);
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.logo { font-size: 1.6rem; font-weight: 800; color: var(--primary); }
+.stats-bar { font-weight: bold; display: flex; gap: 1rem; }
+
+nav { display: flex; gap: 0.5rem; }
+nav button {
+    background: transparent; color: var(--text); border: none;
+    padding: 0.6rem 1rem; font-weight: 600; border-radius: 8px; cursor: pointer;
+}
+nav button.active { background: var(--primary); color: white; }
+
+main { width: 100%; max-width: 800px; margin: 0 auto; padding: 2rem 1rem; box-sizing: border-box; }
+.view-container { display: none; }
+.view-container.active { display: block; }
+
+button {
+    background-color: var(--primary); color: white; border: none;
+    padding: 0.7rem 1.4rem; font-size: 1rem; font-weight: bold;
+    border-radius: 8px; cursor: pointer; transition: opacity 0.2s;
+}
+button:hover { opacity: 0.9; }
+select, textarea { padding: 0.7rem; font-size: 1rem; border-radius: 8px; border: 1px solid #ccc; }
+
+/* Cards Engine Layout */
+.control-panel { display: flex; justify-content: space-between; margin-bottom: 2rem; }
+.flashcard-container { width: 100%; height: 350px; perspective: 1000px; margin-bottom: 1.5rem; }
+.flashcard { width: 100%; height: 100%; position: relative; transition: transform 0.5s; transform-style: preserve-3d; cursor: pointer; }
+.flashcard.is-flipped { transform: rotateX(180deg); }
+.card-face {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    background: var(--card-bg); border-radius: 14px; font-size: 2.2rem; font-weight: bold;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06); box-sizing: border-box; padding: 2rem;
+}
+.card-back { transform: rotateX(180deg); color: var(--primary); }
+.lang-tag { position: absolute; top: 1.2rem; font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+
+.action-bar { display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; }
+.mic-btn { background-color: var(--accent); }
+.mic-btn.listening { background-color: var(--error); animation: ripple 1.5s infinite; }
+
+#speech-feedback { text-align: center; margin-top: 1.5rem; font-size: 1.1rem; font-weight: 700; min-height: 28px; }
+.score-indicator { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; margin-left: 0.5rem; color: white; }
+
+/* Learn/Options UI */
+.learn-box, .import-card, .live-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+.question-prompt { font-size: 1.8rem; font-weight: bold; text-align: center; margin-bottom: 2rem; }
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.options-grid button { background: white; color: var(--text); border: 2px solid #e0e0e0; padding: 1.2rem; text-align: left; }
+.options-grid button:hover { border-color: var(--primary); background: #f8f9ff; }
+
+/* Match Grid */
+.match-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2rem; }
+.match-card {
+    background: white; padding: 1.5rem 0.5rem; text-align: center; font-weight: bold;
+    border-radius: 10px; cursor: pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+    border: 2px solid transparent; min-height: 80px; display: flex; align-items: center; justify-content: center;
+}
+.match-card.selected { border-color: var(--primary); background: #f0f2ff; }
+.match-card.matched { opacity: 0; pointer-events: none; }
+
+/* Live UI Tracks */
+.live-track { margin-bottom: 1.2rem; }
+.track-info { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 0.3rem; }
+.progress-bar { background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; }
+.progress-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.3s; }
+.player-track .progress-fill { background: var(--success); }
+.live-question-box { background: var(--bg); font-size: 1.8rem; text-align: center; padding: 1.5rem; border-radius: 10px; margin: 2rem 0; font-weight: bold; }
+.live-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.live-options button { background: white; color: var(--text); border: 2px solid #e2e8f0; padding: 1rem; }
+
+textarea { width: 100%; height: 160px; box-sizing: border-box; margin-bottom: 1rem; resize: vertical; }
+
+@keyframes ripple {
+    0% { box-shadow: 0 0 0 0 rgba(255, 114, 91, 0.5); }
+    70% { box-shadow: 0 0 0 12px rgba(255, 114, 91, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 114, 91, 0); }
+}
+
+@media (max-width: 600px) {
+    .options-grid, .live-options { grid-template-columns: 1fr; }
+    .match-grid { grid-template-columns: repeat(2, 1fr); }
+}
